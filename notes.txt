@@ -1,0 +1,43 @@
+#include <stdio.h>
+
+
+
+
+
+-check in
+-load/distribute/check file
+
+agree on each of these:
+-recieve command
+-reccieve instrument telemetry
+-send instrument command
+-send telemetry
+
+
+-agree to add task to queue (& share)
+-agree on and share task prerequisites (buffers)
+
+
+-pick task from queue (according to prerequisites)
+
+task has set of input buffers and set of output buffers
+
+once task is complete, check buffers, agree on which one is correct, recompute if necessary
+
+
+
+
+startup:
+check in,
+if less than two peers, wait and check in
+if two peers, load task queue
+if three or more peers, get task queue
+
+
+
+
+
+
+
+
+
