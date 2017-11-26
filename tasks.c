@@ -19,6 +19,7 @@ typedef struct{
     int size;
     char *p;
     char is_filled;
+    char needed;
 } BUF;
 
 void buf_calloc(BUF *buf) {
@@ -69,6 +70,7 @@ typedef struct{
     int num_inputs;
     int output_indexes[OUTPUTS_PER_TASK];
     int num_outputs;
+    char is_done;
 } TASK;
 
 
@@ -76,7 +78,6 @@ typedef struct{
 
 
 void exec_task(TASK *task, BUF *bufs){
-
     BUF inputs[INPUTS_PER_TASK];
     for (int i = 0; i < task->num_inputs; i++) {
         inputs[i] = bufs[task->input_indexes[i]];
@@ -95,7 +96,6 @@ void exec_task(TASK *task, BUF *bufs){
     f = task->f;
     f(inputs, outputs);
     printf("outputs[0].p: %s\n", (outputs[0]).p);
-
 }
 
 void exec_and_check(TASK *task, BUF *bufs) {
@@ -125,17 +125,13 @@ char check_needed(TASK *task, BUF *bufs) {
 }
 
 TASK *next_task(TASK *tasks, int num_tasks, BUF *bufs) {
-    // for (int i = 0; i < 5; i++) {
-    //     printf("%i ", bufs[i].is_filled);
-    // }
-    // printf(" :filled\n");
 
 
     for (int i = 0; i < num_tasks; i++) {
-        char needed = check_needed(tasks + i, bufs);
+        //char needed = check_needed(tasks + i, bufs);
         char prereqs = check_prereqs(tasks + i, bufs);
         //printf("%i/%i ", needed, prereqs);
-        if (needed && prereqs) {
+        if (!tasks[i].is_done && prereqs) {
             //printf("\n");
             return tasks + i;
         }
@@ -144,25 +140,36 @@ TASK *next_task(TASK *tasks, int num_tasks, BUF *bufs) {
     return NULL;
 }
 
-void garbage_collect(TASK *tasks, int num_tasks, BUF *bufs, NUM_BUFS) {
-    // for (int i = 0; i < 5; i++) {
-    //     printf("%i ", bufs[i].is_filled);
-    // }
-    // printf(" :filled\n");
-
-
+void set_needed(TASK *tasks, int num_tasks, BUF *bufs) {
     for (int i = 0; i < num_tasks; i++) {
-        char needed = check_needed(tasks + i, bufs);
-        char prereqs = check_prereqs(tasks + i, bufs);
-        //printf("%i/%i ", needed, prereqs);
-        if (needed && prereqs) {
-            //printf("\n");
-            //return tasks + i;
+        tasks[i].is_done = !check_needed(tasks + i, bufs);
+    }
+}
+
+void garbage_collect(TASK *tasks, int num_tasks, BUF *bufs, int num_bufs) {
+    for (int i = 0; i < num_bufs; i++) {
+        bufs[i].needed = 0;
+    }
+    for (int i = 0; i < num_tasks; i++) {
+        printf(" %i:", tasks[i].is_done);
+        if (!tasks[i].is_done){
+            for (int j = 0; j < tasks[i].num_inputs; j++){
+                int input_j = tasks[i].input_indexes[j];
+                printf("%i:", input_j);
+                bufs[input_j].needed = 1;
+            }
         }
     }
-    //printf("\n");
-    //return NULL;
+    printf(":done\n");
+    for (int i = 0; i < num_bufs; i++) {
+        BUF *buf = bufs + i;
+        if (buf->is_filled && !buf->needed) {
+            //printf("freeing %i\n", i);
+            buf_free(bufs + i);
+        }
+    }
 }
+
 
 
 void test2() {
@@ -172,12 +179,15 @@ void test2() {
     for (int i = 0; i < NUM_BUFS; i++) {
         bufs[i].size = 10;
         bufs[i].is_filled = 0;
+        bufs[i].p = NULL;
     }
     bufs[0].size = 5;
     bufs[1].size = 5;
     bufs[2].size = 5;
     bufs[3].size = 10;
-    bufs[4].size = 10;
+    //bufs[4].size = 10;
+    bufs[4].size = 5;
+    bufs[5].size = 5;
 
     BUF *a = bufs+0;
     buf_calloc(a);
@@ -185,12 +195,16 @@ void test2() {
     a->is_filled = 1;
     printf("buf 0: %s\n", a->p);
 
-    int NUM_TASKS = 4;
+    int NUM_TASKS = 6;
     TASK tasks[NUM_TASKS];
     tasks[0] = (TASK) {&copy_all, {0}, 1, {1}, 1};
     tasks[1] = (TASK) {&inc_all, {0}, 1, {2}, 1};
-    tasks[2] = (TASK) {&combine, {1,2}, 2, {3}, 1};
-    tasks[3] = (TASK) {&inc_all, {3}, 1, {4}, 1};
+    tasks[2] = (TASK) {&combine, {0,2}, 2, {3}, 1};
+    // tasks[3] = (TASK) {&inc_all, {3}, 1, {4}, 1};
+    // tasks[4] = (TASK) {&inc_all, {4}, 1, {5}, 1};
+    tasks[3] = (TASK) {&copy_all, {1}, 1, {4}, 1};
+    tasks[4] = (TASK) {&copy_all, {4}, 1, {5}, 1};
+    tasks[5] = (TASK) {&copy_all, {5}, 1, {1}, 1};
     
 
     // exec_task(&tasks[0], bufs);
@@ -198,14 +212,36 @@ void test2() {
     // exec_task(&tasks[2], bufs);
     // exec_task(&tasks[3], bufs);
 
+    set_needed(tasks, NUM_TASKS, bufs);
     TASK *next = next_task(tasks, NUM_TASKS, bufs);
     while (next != NULL) {
         exec_and_check(next, bufs);
+        set_needed(tasks, NUM_TASKS, bufs);
+
+        garbage_collect(tasks, NUM_TASKS, bufs, 6);
         next = next_task(tasks, NUM_TASKS, bufs);
-    }
 
+        for (int i = 0; i < 6; i++) {
+            printf("%i ", bufs[i].needed);
+        }
+        printf(":needed\n");
+        for (int i = 0; i < 6; i++) {
+            printf("%i ", bufs[i].is_filled);
+        }
+        printf(":filled\n");
+        
+        }
+        for (int i = 0; i < NUM_TASKS; i++) {
+            printf(" %i:", tasks[i].is_done);
+            if (!tasks[i].is_done){
+                for (int j = 0; j < tasks[i].num_inputs; j++){
+                    int input_j = tasks[i].input_indexes[j];
+                    printf("%i:", input_j);
+                }
+            }
+        }
+        printf(":is_done\n");
 
-    //printf("! %s\n", bufs[0].p);
 }
 
 // void test() {
