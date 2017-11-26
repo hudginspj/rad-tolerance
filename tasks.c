@@ -34,14 +34,38 @@ void inc_all(BUF *inputs, BUF *outputs) {
     char *a = inputs[0].p;  //NOTE, copy
     char *b = outputs[0].p;
     int size = inputs[0].size;
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < size-1; i++) {
         b[i]  = a[i] + 1;
+    }
+    b[size-1] = a[size-1];
+}
+void copy_all(BUF *inputs, BUF *outputs) {
+    char *a = inputs[0].p;  //NOTE, copy
+    char *b = outputs[0].p;
+    int size = inputs[0].size;
+    for (int i = 0; i < size; i++) {
+        b[i]  = a[i];
+    }
+}
+void combine(BUF *inputs, BUF *outputs) {
+    char *a = inputs[0].p;  //NOTE, copy
+    char *b = inputs[1].p;
+    char *c = outputs[0].p;
+    int a_size = inputs[0].size;
+    int b_size = inputs[1].size;
+    for (int i = 0; i < a_size; i++) {
+        c[i]  = a[i];
+    }
+    //printf("%s / %s\n", a, c);
+    c[a_size-1] = 'X';
+    for (int i = 0; i < b_size; i++) {
+        c[a_size + i]  = b[i];
     }
 }
 
 typedef struct{
     void (*f)(BUF *,BUF *);
-    int inputs_indexes[INPUTS_PER_TASK];
+    int input_indexes[INPUTS_PER_TASK];
     int num_inputs;
     int output_indexes[OUTPUTS_PER_TASK];
     int num_outputs;
@@ -55,15 +79,17 @@ void exec_task(TASK *task, BUF *bufs){
 
     BUF inputs[INPUTS_PER_TASK];
     for (int i = 0; i < task->num_inputs; i++) {
-        inputs[i] = bufs[task->inputs_indexes[i]];
+        inputs[i] = bufs[task->input_indexes[i]];
     }
 
     BUF outputs[OUTPUTS_PER_TASK];
     for (int i = 0; i < task->num_outputs; i++) {
-        int output_i = task->inputs_indexes[i];
+        int output_i = task->output_indexes[i];
         buf_calloc(bufs+output_i);
         outputs[i] = bufs[output_i];
     }
+
+    //printf("%p-%p\n", inputs[0].p, outputs[0].p);
     
     void (*f)(BUF *,BUF *);
     f = task->f;
@@ -72,44 +98,137 @@ void exec_task(TASK *task, BUF *bufs){
 
 }
 
+void exec_and_check(TASK *task, BUF *bufs) {
+    exec_task(task, bufs);
+    for (int i = 0; i < task->num_outputs; i++) {
+        int output_i = task->output_indexes[i];
+        bufs[output_i].is_filled = 1;
+    }
+}
+
+char check_prereqs(TASK *task, BUF *bufs) {
+    char prereqs_met = 1;
+    for (int i = 0; i < task->num_inputs; i++) {
+        int input_i = task->input_indexes[i];
+        prereqs_met &= bufs[input_i].is_filled;
+    }
+    return prereqs_met;
+}
+
+char check_needed(TASK *task, BUF *bufs) {
+    char output_needed = 0;
+    for (int i = 0; i < task->num_outputs; i++) {
+        int output_i = task->output_indexes[i];
+        output_needed |= !bufs[output_i].is_filled;
+    }
+    return output_needed;
+}
+
+TASK *next_task(TASK *tasks, int num_tasks, BUF *bufs) {
+    // for (int i = 0; i < 5; i++) {
+    //     printf("%i ", bufs[i].is_filled);
+    // }
+    // printf(" :filled\n");
 
 
-void test() {
+    for (int i = 0; i < num_tasks; i++) {
+        char needed = check_needed(tasks + i, bufs);
+        char prereqs = check_prereqs(tasks + i, bufs);
+        //printf("%i/%i ", needed, prereqs);
+        if (needed && prereqs) {
+            //printf("\n");
+            return tasks + i;
+        }
+    }
+    //printf("\n");
+    return NULL;
+}
+
+void garbage_collect(TASK *tasks, int num_tasks, BUF *bufs, NUM_BUFS) {
+    // for (int i = 0; i < 5; i++) {
+    //     printf("%i ", bufs[i].is_filled);
+    // }
+    // printf(" :filled\n");
+
+
+    for (int i = 0; i < num_tasks; i++) {
+        char needed = check_needed(tasks + i, bufs);
+        char prereqs = check_prereqs(tasks + i, bufs);
+        //printf("%i/%i ", needed, prereqs);
+        if (needed && prereqs) {
+            //printf("\n");
+            //return tasks + i;
+        }
+    }
+    //printf("\n");
+    //return NULL;
+}
+
+
+void test2() {
 
     BUF bufs[NUM_BUFS];
 
     for (int i = 0; i < NUM_BUFS; i++) {
         bufs[i].size = 10;
+        bufs[i].is_filled = 0;
     }
-    BUF *a = bufs+2;
+    bufs[0].size = 5;
+    bufs[1].size = 5;
+    bufs[2].size = 5;
+    bufs[3].size = 10;
+    bufs[4].size = 10;
+
+    BUF *a = bufs+0;
     buf_calloc(a);
-    //buf_calloc(bufs+3);
-    //printf("afefse %d\n", a.p);
-    sprintf(a->p, "AAAb");
+    sprintf(a->p, "AAAA");
     a->is_filled = 1;
-    printf("a->p: %s\n", a->p);
+    printf("buf 0: %s\n", a->p);
 
-    void (*f)(BUF *,BUF *);
-    f = &inc_all;
-
-    TASK task2 = {
-        f,
-        {2},
-        1,
-        {3},
-        1
-    };
-
+    int NUM_TASKS = 4;
+    TASK tasks[NUM_TASKS];
+    tasks[0] = (TASK) {&copy_all, {0}, 1, {1}, 1};
+    tasks[1] = (TASK) {&inc_all, {0}, 1, {2}, 1};
+    tasks[2] = (TASK) {&combine, {1,2}, 2, {3}, 1};
+    tasks[3] = (TASK) {&inc_all, {3}, 1, {4}, 1};
     
-    exec_task(&task2, bufs);
 
+    // exec_task(&tasks[0], bufs);
+    // exec_task(&tasks[1], bufs);
+    // exec_task(&tasks[2], bufs);
+    // exec_task(&tasks[3], bufs);
+
+    TASK *next = next_task(tasks, NUM_TASKS, bufs);
+    while (next != NULL) {
+        exec_and_check(next, bufs);
+        next = next_task(tasks, NUM_TASKS, bufs);
+    }
+
+
+    //printf("! %s\n", bufs[0].p);
 }
 
-void gen_hash(char* hash_buff, char *data_buff, int len) {  //TODO just copy if less than len
-    char *hash;
-    hash = MD4(data_buff, len);
-    strcpy(hash_buff, hash);
-}
+// void test() {
+
+//     BUF bufs[NUM_BUFS];
+
+//     for (int i = 0; i < NUM_BUFS; i++) {
+//         bufs[i].size = 10;
+//     }
+//     BUF *a = bufs+2;
+//     buf_calloc(a);
+//     //buf_calloc(bufs+3);
+//     //printf("afefse %d\n", a.p);
+//     sprintf(a->p, "AAAb");
+//     a->is_filled = 1;
+//     printf("a->p: %s\n", a->p);
+
+
+//     TASK task2 = {&inc_all, {2}, 1, {3}, 1};
+    
+//     exec_task(&task2, bufs);
+// }
+
 
 // void be_chief(int chief_rank) {
 
@@ -146,34 +265,15 @@ void main (int argc, char * argv[])
     int i, rank, size;
     char buff[BUFSIZE] = {0};
     
+    //test2();
+
     MPI_Status stat;
     MPI_Init (&argc, &argv);	
     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 
-    if (rank == 0) test();
+    if (rank == 0) test2();
     MPI_Finalize();
     return;
-
-
-    // sprintf(buff, "Hello from %d! ", rank);  
-    // MPI_Send(buff, BUFSIZE, MPI_CHAR, !rank, TAG, MPI_COMM_WORLD);
-    // printf("Message sent by %d: %s\n", rank, buff);
-    // MPI_Recv(buff, BUFSIZE, MPI_CHAR, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &stat);
-    // printf("Message rccieved by %d from %d: %s\n", rank, stat.MPI_SOURCE, buff);
-
-    
-    // MPI_Bcast (buff,BUFSIZE,MPI_CHAR,1,MPI_COMM_WORLD);
-    // printf("Common buffer in process %d: %s\n", rank, buff);
-
-    if (rank == 0) {
-        be_chief(0);
-    } else if (rank == 1){
-        sprintf(buff, "AAA");
-        check(rank, 0, buff);
-    } else {
-        sprintf(buff, "AAAb");
-        check(rank, 0, buff);
-    }
 
     MPI_Finalize();
 }
