@@ -7,8 +7,11 @@
 #include "md4.h"
 #include "tasks.h"
 
+#define TODO_DELETE_FIRSTNODE
+#define TODO_DELETE_SECONDNODE
+
 #define BUFSIZE 32
-#define HASHSIZE 33
+//#define HASHSIZE 33
 #define TAG 0
 #define TAG_GOT_DATA 1
 #define TAG_RESP 2
@@ -53,10 +56,12 @@ int comm_size;
 #define NUM_BUFS 10
 #define NUM_TASKS 6
 BUF bufs[NUM_BUFS];
+int sources[NUM_BUFS];
 TASK tasks[NUM_TASKS];
 
 void init_tasks_and_bufs() {
     for (int i = 0; i < NUM_BUFS; i++) {
+        sources[i] = -1;
         bufs[i].size = 10;
         bufs[i].is_filled = 0;
         bufs[i].p = NULL;
@@ -84,10 +89,11 @@ void init_tasks_and_bufs() {
 }
 
 
-void gen_hash(char* hash_buff, char *data_buff, int len) {  //TODO just copy if less than len
+void gen_hash(char* hash_buff, int buf_i) {  //TODO just copy if less than len
     char *hash;
-    hash = MD4(data_buff, len);
+    hash = MD4(bufs[buf_i].p, bufs[buf_i].size);
     strcpy(hash_buff, hash);
+    free(hash);
 }
 
 
@@ -100,21 +106,10 @@ void bit_gremlin(char *buff, int size) {
 }
 
 
-
-
-
 void chief_check_buffer(int buffer) {
     COMMAND cmd = {COMMAND_CHECK_BUFFER, buffer};
     MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 1, TAG, MPI_COMM_WORLD);
     MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 2, TAG, MPI_COMM_WORLD);
-
-    // char hash1[HASHSIZE];
-    // char hash2[HASHSIZE];
-    // MPI_Recv(hash1, HASHSIZE, MPI_CHAR, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &stat);
-    // MPI_Recv(hash2, HASHSIZE, MPI_CHAR, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &stat);
-    // printf("chief got hashes %s and %s\n", hash1, hash2);
-    // char check = (!memcmp(hash1, hash2, HASHSIZE));
-    // printf("check: %d\n", check);
 }
 
 
@@ -130,40 +125,13 @@ void noop_resp(int rank) {
     }
 }
 
-void send_buffer(int rank) {
-    char buff[BUFSIZE] = "blah";
-    if (1){//rank == 1 || rank == 2) {
-        printf("node %d sending: %s\n", rank, buff);
-
-        MPI_Request mpi_req;
-        MPI_Isend(buff, RESP_LENGTH, RESP_TYPE, CHIEF_RANK, TAG_RESP, MPI_COMM_WORLD, &mpi_req);
-        MPI_Wait(&mpi_req, &stat);
+void exec_and_check(TASK *task, BUF *bufs) {
+    exec_task(task, bufs);
+    for (int i = 0; i < task->num_outputs; i++) {
+        int output_i = task->output_indexes[i];
+        bufs[output_i].is_filled = 1;
     }
 }
-
-void check_buffer(int rank, int buf_i) {
-    //char buff[BUFSIZE] = {0};
-    char *buf_p = bufs[buf_i].p;
-    bit_gremlin(buf_p, 8);
-    printf("%d buffer: %s\n", rank, buf_p);
-
-    //char hash[HASHSIZE];
-    RESPONSE resp;
-    gen_hash(resp.hash, buf_p, BUFSIZE);
-    
-    //MPI_Send(hash, HASHSIZE, MPI_CHAR, CHIEF_RANK, TAG, MPI_COMM_WORLD);
-    
-    // if (/*rank == 1 || */rank == 2) {
-    //     //if (rank == 1) sleep(2);
-    //     printf("node %d sending hash: %s\n", rank, resp.hash);
-
-    //     MPI_Request mpi_req;
-    //     //MPI_Send(&resp, RESP_LENGTH, RESP_TYPE, CHIEF_RANK, TAG_RESP, MPI_COMM_WORLD);
-    //     MPI_Isend(&resp, RESP_LENGTH, RESP_TYPE, CHIEF_RANK, TAG_RESP, MPI_COMM_WORLD, &mpi_req);
-    //     MPI_Wait(&mpi_req, &stat);
-    // }
-}
-
 
 void chief_exec_task(int task) {
     COMMAND cmd = {COMMAND_TASK, 1};
@@ -171,49 +139,76 @@ void chief_exec_task(int task) {
     MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 2, TAG, MPI_COMM_WORLD);
 }
 
+void check_buffer(int rank, int buf_i) {
+    //char buff[BUFSIZE] = {0};
+    char *buf_p = bufs[buf_i].p;
+    bit_gremlin(buf_p, 3);
+    printf("%d buffer: %s\n", rank, buf_p);
+
+    //char hash[HASHSIZE];
+    RESPONSE resp;
+    resp.arg = buf_i;
+    gen_hash(resp.hash, buf_i);
+
+
+    noop_resp(rank);
+
+
+    MPI_Request mpi_req;
+    MPI_Isend(&resp, RESP_LENGTH, RESP_TYPE, CHIEF_RANK, TAG_RESP, MPI_COMM_WORLD, &mpi_req);
+    MPI_Wait(&mpi_req, &stat);
+    
+}
+
+
+
+
 
 
 void node_run(int rank) {
     srand(time(NULL)+rank);
     printf("First random %d\n", rand());
-    //send_buffer(3);
+    noop_resp(rank);
 
-    // while (1) {
+    while (1) {
         COMMAND cmd;
         MPI_Recv(&cmd, COMMAND_LENGTH, COMMAND_TYPE, CHIEF_RANK, TAG, MPI_COMM_WORLD, &stat);
-        printf("--Node %d recv cmd %d %d %d\n", rank, cmd.command, cmd.arg1, cmd.arg2);
-        //send_buffer(rank);
-        noop_resp(rank);
+        //printf("--Node %d recv cmd %d %d %d\n", rank, cmd.command, cmd.arg1, cmd.arg2);
+        
 
         if (cmd.command == COMMAND_CHECK_BUFFER) {
-            send_buffer(rank);
-            //check_buffer(rank, cmd.arg1);
+            //send_buffer(rank);
+            check_buffer(rank, cmd.arg1);
         } else if (cmd.command == COMMAND_TASK) {
             exec_task(tasks+cmd.arg1, bufs);
+        } else if (cmd.command == COMMAND_FINALIZE) {
+            break;
         }
-    //     } else if (cmd.command == COMMAND_FINALIZE) {
-    //         break;
-    //     }
-    // }
+    }
 }
 
 
-int chief_handle_response(MPI_Request *mpi_req) {
-    RESPONSE resp;
-    //MPI_Request mpi_req;
-    int flag;
+void chief_handle_response(RESPONSE resp, int source) {
+    printf("chief got hash %s\n", resp.hash);
+    int buf_i = resp.arg;
 
-    //MPI_Irecv(&resp, RESP_LENGTH, RESP_TYPE, MPI_ANY_SOURCE, TAG_RESP, MPI_COMM_WORLD, &mpi_req);
-    MPI_Test(mpi_req, &flag, &stat);
-    printf("flag %d\n", flag);
-    if (!flag) {
-        return 0;
+    if (sources[buf_i] == -1) {
+        sources[buf_i] = source;
+        memcpy(bufs[buf_i].p, resp.hash, HASHSIZE); //Store
+        printf("chief saved first result\n");
+    } else {
+        //printf("chief got second result \n");
+        sources[buf_i] = -1;
+        if (memcmp(bufs[buf_i].p, resp.hash, HASHSIZE)) { //Check failed
+         printf("Check failed\n");
+         chief_check_buffer(buf_i);
+
+        } else {  //Check succeeded
+            printf("Check succeeded\n");
+        }
     }
-    printf("chief got response from %d, type %d\n", stat.MPI_SOURCE, resp.type);
 
-    printf("chief got response from %d, type %d\n", stat.MPI_SOURCE, resp.type); 
-    
-    return 1;
+
 }
 
 
@@ -232,23 +227,23 @@ void be_chief() {
 
     chief_check_buffer(0);
     while (1) {
-        int flag;
-        MPI_Request mpi_req;
-        RESPONSE resp;
-        MPI_Irecv(&resp, RESP_LENGTH, RESP_TYPE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &mpi_req);
-        MPI_Test(&mpi_req, &flag, &stat);
-        if (flag && stat.MPI_TAG == 2)
-            printf("flag %d source %d tag %d\n", flag, stat.MPI_SOURCE, stat.MPI_TAG);
-        //chief_handle_response(&mpi_req);
         sleep(1);
+        /* Handle all responses */
+        while (1) {
+            int flag;
+            MPI_Request mpi_req;
+            RESPONSE resp;
+            MPI_Irecv(&resp, RESP_LENGTH, RESP_TYPE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &mpi_req);
+            MPI_Test(&mpi_req, &flag, &stat);
+            if (!flag) break;
+            if (stat.MPI_TAG == 2) {
+                printf("flag %d source %d tag %d\n", flag, stat.MPI_SOURCE, stat.MPI_TAG);
+                chief_handle_response(resp, stat.MPI_SOURCE);
+            }
+            
+        }
+        
     }
-    // while (1) {
-    //     MPI_Request mpi_req;
-    //     RESPONSE resp;
-    //     MPI_Irecv(&resp, RESP_LENGTH, RESP_TYPE, MPI_ANY_SOURCE, TAG_RESP, MPI_COMM_WORLD, &mpi_req);
-    //     chief_handle_response(&mpi_req);
-    //     sleep(1);
-    // }
     chief_finalize();
 
     

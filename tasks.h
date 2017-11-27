@@ -7,7 +7,7 @@
 #include "md4.h"
 
 //#define BUFSIZE 128
-//#define HASHSIZE 33
+#define HASHSIZE 33
 //#define TAG 0
 //#define TAG_GOT_DATA 1
 #define NUM_BUFS 10
@@ -21,6 +21,7 @@ typedef struct{
     char *p;
     char is_filled;
     char needed;
+    char chief_needs;
 } BUF;
 
 // void buf_calloc(BUF *buf) {
@@ -47,6 +48,7 @@ typedef struct{
     int output_indexes[OUTPUTS_PER_TASK];
     int num_outputs;
     char is_done;
+    char chief_only;
 } TASK;
 
 
