@@ -2,13 +2,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 #include <mpi.h>
 #include "md4.h"
 
-#define BUFSIZE 128
-#define HASHSIZE 33
-#define TAG 0
-#define TAG_GOT_DATA 1
+//#define BUFSIZE 128
+//#define HASHSIZE 33
+//#define TAG 0
+//#define TAG_GOT_DATA 1
 #define NUM_BUFS 10
 
 #define INPUTS_PER_TASK 8
@@ -23,12 +24,19 @@ typedef struct{
 } BUF;
 
 void buf_calloc(BUF *buf) {
+    assert(!buf->is_filled);
     buf->p = calloc(buf->size, sizeof(char));
 }
 
 void buf_free(BUF *buf) {
     free(buf->p);
     buf->is_filled = 0;
+    buf->p = NULL;
+}
+void buf_fill(BUF *buf, char *str){
+    buf_calloc(buf);
+    sprintf(buf->p, str);
+    buf->is_filled = 1;
 }
 
 void inc_all(BUF *inputs, BUF *outputs) {
@@ -245,20 +253,20 @@ void test2() {
 }
 
 
-void main (int argc, char * argv[])
-{
-    int i, rank, size;
-    char buff[BUFSIZE] = {0};
+// void main (int argc, char * argv[])
+// {
+//     int i, rank, size;
+//     //char buff[BUFSIZE] = {0};
     
-    //test2();
+//     //test2();
 
-    MPI_Status stat;
-    MPI_Init (&argc, &argv);	
-    MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+//     MPI_Status stat;
+//     MPI_Init (&argc, &argv);	
+//     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 
-    if (rank == 0) test2();
-    MPI_Finalize();
-    return;
+//     if (rank == 0) test2();
+//     MPI_Finalize();
+//     return;
 
-    MPI_Finalize();
-}
+//     MPI_Finalize();
+// }
