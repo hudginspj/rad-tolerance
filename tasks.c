@@ -244,57 +244,6 @@ void test2() {
 
 }
 
-// void test() {
-
-//     BUF bufs[NUM_BUFS];
-
-//     for (int i = 0; i < NUM_BUFS; i++) {
-//         bufs[i].size = 10;
-//     }
-//     BUF *a = bufs+2;
-//     buf_calloc(a);
-//     //buf_calloc(bufs+3);
-//     //printf("afefse %d\n", a.p);
-//     sprintf(a->p, "AAAb");
-//     a->is_filled = 1;
-//     printf("a->p: %s\n", a->p);
-
-
-//     TASK task2 = {&inc_all, {2}, 1, {3}, 1};
-    
-//     exec_task(&task2, bufs);
-// }
-
-
-// void be_chief(int chief_rank) {
-
-//     MPI_Status stat;
-//     printf("%d starting\n", chief_rank);
-
-//     char hash1[HASHSIZE];
-//     char hash2[HASHSIZE];
-//     MPI_Recv(hash1, HASHSIZE, MPI_CHAR, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &stat);
-//     MPI_Recv(hash2, HASHSIZE, MPI_CHAR, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &stat);
-//     printf("chief got hashes %s and %s\n", hash1, hash2);
-//     char check = (!memcmp(hash1, hash2, HASHSIZE));
-//     printf("check: %d\n", check);
-// }
-
-
-
-// void check(int rank, int chief_rank, char* buff) {
-//     int first_res;
-//     printf("%d starting\n", rank);
-
-    
-
-//     char hash[HASHSIZE];
-//     gen_hash(hash, buff, HASHSIZE);
-//     printf("node %d hash: %s\n", rank, hash);
-//     MPI_Send(hash, HASHSIZE, MPI_CHAR, chief_rank, TAG, MPI_COMM_WORLD);
-
-// }
-
 
 void main (int argc, char * argv[])
 {
