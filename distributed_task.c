@@ -49,7 +49,7 @@ typedef struct{
 
 MPI_Status stat;
 int comm_size;
-
+int exit_flag = 0;
 
 
 
@@ -99,7 +99,7 @@ void gen_hash(char* hash_buff, int buf_i) {  //TODO just copy if less than len
 
 void noop_resp(int rank) {
     char buff[BUFSIZE] = "blah";
-    printf("node %d sending noop\n", rank);
+    //printf("node %d sending noop\n", rank);
 
     MPI_Request mpi_req;
     MPI_Isend(buff, RESP_LENGTH, RESP_TYPE, CHIEF_RANK, TAG_NOOP_RESP, MPI_COMM_WORLD, &mpi_req);
@@ -117,7 +117,7 @@ void chief_exec_task(int task_i) { //TASK *task, BUF *bufs) {
     COMMAND cmd = {COMMAND_TASK, task_i};
     MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 1, TAG, MPI_COMM_WORLD);
     MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 2, TAG, MPI_COMM_WORLD);
-    printf("TODO check buffers\n");
+    //printf("TODO check buffers\n");
     // for (int i = 0; i < task->num_outputs; i++) {
     //     int output_i = task->output_indexes[i];
     //     bufs[output_i].is_filled = 1;
@@ -129,7 +129,7 @@ void check_buffer(int rank, int buf_i) {
     //char buff[BUFSIZE] = {0};
     // char *buf_p = bufs[buf_i].p;
     // bit_gremlin(buf_p, 3);
-    printf("%d buffer: %s\n", rank, bufs[buf_i].p);
+    printf("node %d checking buffer value: %s\n", rank, bufs[buf_i].p);
 
     //char hash[HASHSIZE];
     RESPONSE resp;
@@ -149,13 +149,13 @@ void check_buffer(int rank, int buf_i) {
 
 void node_run(int rank) {
     srand(time(NULL)+rank);
-    printf("First random %d\n", rand());
+    //printf("First random %d\n", rand());
     noop_resp(rank);
 
     while (1) {
         COMMAND cmd;
         MPI_Recv(&cmd, COMMAND_LENGTH, COMMAND_TYPE, CHIEF_RANK, TAG, MPI_COMM_WORLD, &stat);
-        //printf("--Node %d recv cmd %d %d %d\n", rank, cmd.command, cmd.arg1, cmd.arg2);
+        printf("Node %d received cmd %d %d %d\n", rank, cmd.command, cmd.arg1, cmd.arg2);
         
 
         if (cmd.command == COMMAND_CHECK_BUFFER) {
@@ -166,14 +166,25 @@ void node_run(int rank) {
             printf("node %d executing task %d\n", rank, cmd.arg1);
             exec_task(&task, bufs);
         } else if (cmd.command == COMMAND_FINALIZE) {
+            printf("Node %d finalizing\n");
             break;
         }
     }
 }
 
 
+void chief_finalize() {
+    printf("Chief finalizing\n");
+    for (int i = 1; i < comm_size; i++) {
+        COMMAND cmd = {COMMAND_FINALIZE};
+        MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, i, TAG, MPI_COMM_WORLD);
+    }
+    //MPI_Finalize();
+    exit_flag = 1;
+}
+
 void chief_handle_response(RESPONSE resp, int source) {
-    printf("chief got hash %s\n", resp.hash);
+    printf("chief got hash %s from node %d\n", resp.hash, source);
     int buf_i = resp.arg;
 
 
@@ -187,10 +198,13 @@ void chief_handle_response(RESPONSE resp, int source) {
         sources[buf_i] = -1;
         if (memcmp(bufs[buf_i].p, resp.hash, HASHSIZE)) { //Check failed
             int task_to_redo = find_task_for_output(tasks, NUM_TASKS, buf_i);
-            printf("Check buffer %d failed, redo task %d\n", buf_i, task_to_redo);
+            printf("!!! Check of buffer %d failed, redo task %d\n", buf_i, task_to_redo);
+            chief_exec_task(task_to_redo);
+            chief_check_buffer(2);
             //chief_check_buffer(buf_i);
         } else {  //Check succeeded
             printf("Check succeeded\n");
+            chief_finalize();
         }
     }
 
@@ -199,13 +213,7 @@ void chief_handle_response(RESPONSE resp, int source) {
 
 
 
-void chief_finalize() {
-    printf("Chief finalizing\n");
-    for (int i = 1; i < comm_size; i++) {
-        COMMAND cmd = {COMMAND_FINALIZE};
-        MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, i, TAG, MPI_COMM_WORLD);
-    }
-}
+
 
 void chief_run() {
     MPI_Status stat;
@@ -214,10 +222,10 @@ void chief_run() {
     
     chief_exec_task(1);
     chief_check_buffer(2);
-    while (1) {
+    while (!exit_flag) {
         sleep(1);
         /* Handle all responses */
-        while (1) {
+        while (!exit_flag) {
             int flag;
             MPI_Request mpi_req;
             RESPONSE resp;
@@ -225,16 +233,14 @@ void chief_run() {
             MPI_Test(&mpi_req, &flag, &stat);
             if (!flag) break;
             if (stat.MPI_TAG == 2) {
-                printf("flag %d source %d tag %d\n", flag, stat.MPI_SOURCE, stat.MPI_TAG);
+                //printf("flag %d source %d tag %d\n", flag, stat.MPI_SOURCE, stat.MPI_TAG);
                 chief_handle_response(resp, stat.MPI_SOURCE);
             }
             
         }
         
     }
-    chief_finalize();
-
-    
+    //chief_finalize();
 }
 
 

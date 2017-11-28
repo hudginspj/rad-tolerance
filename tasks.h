@@ -14,7 +14,7 @@
 
 #define INPUTS_PER_TASK 8
 #define OUTPUTS_PER_TASK 4
-#define GREMLIN_RATE 4 
+#define GREMLIN_RATE 4
 
 typedef struct{
     //MPI_DATATYPE type;

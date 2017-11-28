@@ -1,5 +1,7 @@
 This project requires mpicc, a makefile is provided.
 
+
+
 To run the single-threaded task-graph demo:
 $ ./task_graph_demo
 
@@ -15,9 +17,15 @@ The second part of the demo copies a string in a circle between buffers 1, 4, an
 This demonstates the ability to specify a top-level control loop with a task graph, and demonstrates garbage collection.
 
 
-To run the MPI-based experiment
-$ mpiexec -np 3 distributed task
 
+To run the MPI-based experiment
+$ mpiexec -np 3 distributed_task
+
+The chief instructs two nodes to complete a task, then to send hashes of their outputs.
+These hashes are compared, and if they do not match, the process is repeated until they do.
+Currently, the bit_gremlin() function in tasks.c is set to produce errors only for the first attempt.
+
+The process will complete successfully, but sometimes exits with a corrupted memory error.
 
 
 

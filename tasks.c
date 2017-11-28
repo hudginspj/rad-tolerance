@@ -16,12 +16,16 @@
 #define OUTPUTS_PER_TASK 4
 #define GREMLIN_RATE 4
 
+int errors = 0;
 void bit_gremlin(char *buff, int size) {
-    for (int i = 0; i < size; i++) {
-        if (rand()%GREMLIN_RATE == 0) {
-            buff[i] = buff[i] ^ 1;
+    if (errors < 1){
+        errors++;
+        for (int i = 0; i < size; i++) {
+            if (rand()%GREMLIN_RATE == 0) {
+                buff[i] = buff[i] ^ 1;
+            }
         }
-    }
+    }   
 }
 
 
@@ -114,7 +118,7 @@ void exec_task(TASK *task, BUF *bufs){
     f = task->f;
     f(inputs, outputs);
     bit_gremlin(outputs[0].p, 4);
-    printf("outputs[0].p: %s\n", (outputs[0]).p);
+    //printf("outputs[0].p: %s\n", (outputs[0]).p);
 }
 
 void exec_and_check(TASK *task, BUF *bufs) {
