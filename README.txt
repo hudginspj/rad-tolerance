@@ -15,7 +15,6 @@ The second part of the demo copies a string in a circle between buffers 1, 4, an
 This demonstates the ability to specify a top-level control loop with a task graph, and demonstrates garbage collection.
 
 
-
 To run the MPI-based experiment
 $ mpiexec -np 3 distributed task
 
