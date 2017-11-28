@@ -16,9 +16,8 @@ This demonstates the ability to specify a top-level control loop with a task gra
 
 
 
-To run the MPI experiment
-$ mpicc -np 3 
-
+To run the MPI-based experiment
+$ mpiexec -np 3 distributed task
 
 
 
