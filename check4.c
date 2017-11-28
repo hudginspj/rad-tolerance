@@ -7,8 +7,8 @@
 #include "md4.h"
 #include "tasks.h"
 
-#define TODO_DELETE_FIRSTNODE
-#define TODO_DELETE_SECONDNODE
+#define TODO_DELETE_FIRSTNODE 1
+#define TODO_DELETE_SECONDNODE 2
 
 #define BUFSIZE 32
 //#define HASHSIZE 33
@@ -18,7 +18,7 @@
 #define TAG_NOOP_RESP 21
 #define TAG_BUFFER 3
 #define TAG_RESP_BUFFER 3
-#define GREMLIN_RATE 8
+
 
 #define CHIEF_RANK 0
 
@@ -97,53 +97,39 @@ void gen_hash(char* hash_buff, int buf_i) {  //TODO just copy if less than len
 }
 
 
-void bit_gremlin(char *buff, int size) {
-    for (int i = 0; i < size; i++) {
-        if (rand()%GREMLIN_RATE == 0) {
-            buff[i] = buff[i] ^ 1;
-        }
-    }
-}
+void noop_resp(int rank) {
+    char buff[BUFSIZE] = "blah";
+    printf("node %d sending noop\n", rank);
 
+    MPI_Request mpi_req;
+    MPI_Isend(buff, RESP_LENGTH, RESP_TYPE, CHIEF_RANK, TAG_NOOP_RESP, MPI_COMM_WORLD, &mpi_req);
+    MPI_Wait(&mpi_req, &stat);
+}
 
 void chief_check_buffer(int buffer) {
     COMMAND cmd = {COMMAND_CHECK_BUFFER, buffer};
+    MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, TODO_DELETE_FIRSTNODE, TAG, MPI_COMM_WORLD);
+    MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, TODO_DELETE_SECONDNODE, TAG, MPI_COMM_WORLD);
+}
+
+
+void chief_exec_task(int task_i) { //TASK *task, BUF *bufs) {
+    COMMAND cmd = {COMMAND_TASK, task_i};
     MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 1, TAG, MPI_COMM_WORLD);
     MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 2, TAG, MPI_COMM_WORLD);
+    printf("TODO check buffers\n");
+    // for (int i = 0; i < task->num_outputs; i++) {
+    //     int output_i = task->output_indexes[i];
+    //     bufs[output_i].is_filled = 1;
+    // }
 }
 
-
-
-void noop_resp(int rank) {
-    char buff[BUFSIZE] = "blah";
-    if (1){//rank == 1 || rank == 2) {
-        printf("node %d sending noop\n", rank);
-
-        MPI_Request mpi_req;
-        MPI_Isend(buff, RESP_LENGTH, RESP_TYPE, CHIEF_RANK, TAG_NOOP_RESP, MPI_COMM_WORLD, &mpi_req);
-        MPI_Wait(&mpi_req, &stat);
-    }
-}
-
-void exec_and_check(TASK *task, BUF *bufs) {
-    exec_task(task, bufs);
-    for (int i = 0; i < task->num_outputs; i++) {
-        int output_i = task->output_indexes[i];
-        bufs[output_i].is_filled = 1;
-    }
-}
-
-void chief_exec_task(int task) {
-    COMMAND cmd = {COMMAND_TASK, 1};
-    MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 1, TAG, MPI_COMM_WORLD);
-    MPI_Send(&cmd, COMMAND_LENGTH, COMMAND_TYPE, 2, TAG, MPI_COMM_WORLD);
-}
 
 void check_buffer(int rank, int buf_i) {
     //char buff[BUFSIZE] = {0};
-    char *buf_p = bufs[buf_i].p;
-    bit_gremlin(buf_p, 3);
-    printf("%d buffer: %s\n", rank, buf_p);
+    // char *buf_p = bufs[buf_i].p;
+    // bit_gremlin(buf_p, 3);
+    printf("%d buffer: %s\n", rank, bufs[buf_i].p);
 
     //char hash[HASHSIZE];
     RESPONSE resp;
@@ -161,10 +147,6 @@ void check_buffer(int rank, int buf_i) {
 }
 
 
-
-
-
-
 void node_run(int rank) {
     srand(time(NULL)+rank);
     printf("First random %d\n", rand());
@@ -180,7 +162,9 @@ void node_run(int rank) {
             //send_buffer(rank);
             check_buffer(rank, cmd.arg1);
         } else if (cmd.command == COMMAND_TASK) {
-            exec_task(tasks+cmd.arg1, bufs);
+            TASK task = tasks[cmd.arg1];
+            printf("node %d executing task %d\n", rank, cmd.arg1);
+            exec_task(&task, bufs);
         } else if (cmd.command == COMMAND_FINALIZE) {
             break;
         }
@@ -192,17 +176,19 @@ void chief_handle_response(RESPONSE resp, int source) {
     printf("chief got hash %s\n", resp.hash);
     int buf_i = resp.arg;
 
+
     if (sources[buf_i] == -1) {
         sources[buf_i] = source;
+        buf_calloc(&bufs[buf_i]);
         memcpy(bufs[buf_i].p, resp.hash, HASHSIZE); //Store
         printf("chief saved first result\n");
     } else {
         //printf("chief got second result \n");
         sources[buf_i] = -1;
         if (memcmp(bufs[buf_i].p, resp.hash, HASHSIZE)) { //Check failed
-         printf("Check failed\n");
-         chief_check_buffer(buf_i);
-
+            int task_to_redo = find_task_for_output(tasks, NUM_TASKS, buf_i);
+            printf("Check buffer %d failed, redo task %d\n", buf_i, task_to_redo);
+            //chief_check_buffer(buf_i);
         } else {  //Check succeeded
             printf("Check succeeded\n");
         }
@@ -221,11 +207,13 @@ void chief_finalize() {
     }
 }
 
-void be_chief() {
+void chief_run() {
     MPI_Status stat;
     printf("Starting as chief \n");
 
-    chief_check_buffer(0);
+    
+    chief_exec_task(1);
+    chief_check_buffer(2);
     while (1) {
         sleep(1);
         /* Handle all responses */
@@ -261,7 +249,7 @@ void main (int argc, char * argv[])
     MPI_Comm_size (MPI_COMM_WORLD, &comm_size);  
 
     if (rank == 0) {
-        be_chief();
+        chief_run();
     } else {
         node_run(rank);
     }

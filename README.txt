@@ -1,4 +1,4 @@
-todo: md4.o isend check4 tasks.o task_graph_demo
+todo: md4.o isend check check2 check3 check4 tasks.o
 md4.o: md4.c md4.h
 	cc -c md4.c
 isend: isend.c
@@ -12,10 +12,10 @@ check3: check3.c md4.o tasks.o
 check4: check4.c md4.o tasks.o
 	mpicc check4.c md4.o tasks.o -o check4	
 task_graph_demo: task_graph_demo.c
-	cc task_graph_demo.c -o task_graph_demo	
+	mpicc task_graph_demo.c -o task_graph_demo	
 tasks: tasks.c
 	mpicc tasks.c -o tasks	
 tasks.o: tasks.c tasks.h
 	mpicc -c tasks.c	
 clean:
-	rm md4.o isend check4 tasks.o task_graph_demo
+	rm md4.o check check2 tasks

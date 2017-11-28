@@ -14,6 +14,7 @@
 
 #define INPUTS_PER_TASK 8
 #define OUTPUTS_PER_TASK 4
+#define GREMLIN_RATE 4 
 
 typedef struct{
     //MPI_DATATYPE type;
@@ -24,16 +25,8 @@ typedef struct{
     char chief_needs;
 } BUF;
 
-// void buf_calloc(BUF *buf) {
-//     assert(!buf->is_filled);
-//     buf->p = calloc(buf->size, sizeof(char));
-// }
-
-// void buf_free(BUF *buf) {
-//     free(buf->p);
-//     buf->is_filled = 0;
-//     buf->p = NULL;
-// }
+void buf_calloc(BUF *buf);
+void buf_free(BUF *buf);
 void buf_fill(BUF *buf, char *str);
 
 void inc_all(BUF *inputs, BUF *outputs);
@@ -54,6 +47,7 @@ typedef struct{
 
 void exec_task(TASK *task, BUF *bufs);
 
+int find_task_for_output(TASK *tasks, int num_tasks, int buf_num);
 
 char check_prereqs(TASK *task, BUF *bufs);
 

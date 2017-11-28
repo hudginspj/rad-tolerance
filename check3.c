@@ -75,13 +75,13 @@ void gen_hash(char* hash_buff, char *data_buff, int len) {  //TODO just copy if 
 }
 
 
-void bit_gremlin(char *buff, int size) {
-    for (int i = 0; i < size; i++) {
-        if (rand()%GREMLIN_RATE == 0) {
-            buff[i] = buff[i] ^ 1;
-        }
-    }
-}
+// void bit_gremlin(char *buff, int size) {
+//     for (int i = 0; i < size; i++) {
+//         if (rand()%GREMLIN_RATE == 0) {
+//             buff[i] = buff[i] ^ 1;
+//         }
+//     }
+// }
 
 
 

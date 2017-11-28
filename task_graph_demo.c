@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
-#include <mpi.h> 
-#include "md4.h"
+// #include <mpi.h>
+// #include "md4.h"
 
 //#define BUFSIZE 128
 //#define HASHSIZE 33
@@ -274,20 +274,9 @@ void test2() {
 }
 
 
-// void main (int argc, char * argv[])
-// {
-//     int i, rank, size;
-//     //char buff[BUFSIZE] = {0};
+void main (int argc, char * argv[])
+{
     
-//     //test2();
+    //test2();
 
-//     MPI_Status stat;
-//     MPI_Init (&argc, &argv);	
-//     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
-
-//     if (rank == 0) test2();
-//     MPI_Finalize();
-//     return;
-
-//     MPI_Finalize();
-// }
+}
