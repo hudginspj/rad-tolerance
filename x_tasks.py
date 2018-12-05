@@ -14,6 +14,9 @@ class Task:
         self.done = False
 
 def exec_task(task, buffers):
+    # Should send to multiple processors
+    # Second iteration: figure out which workers are not busy, and send it to them
+    # If all workers are busy, wait until they are free
     args = [buffers[key].data for key in task.input_keys]
     out_buffer = buffers[task.output_key]
     out_buffer.data = task.function(*args)
@@ -44,7 +47,12 @@ tasks = [
     Task('D', max, 'A','B'),
     Task('E', max, 'C','D')
 ]
-# 
+# tsp = None
+# tsp_stitch = None
+
+# Task('Path1', tsp, 'Block1', redundancy=3)
+# Task('Path2', tsp, 'Block2', redundancy=3)
+# Task('Path', tsp_stitch, 'Path1','Path2', redundancy=2)
 
 
 buffers = {key: Buffer(data) for (key, data) in buffer_data.items()}
