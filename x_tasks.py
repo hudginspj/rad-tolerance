@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+from mpi4py import MPI
 
 class Buffer:
     def __init__(self, data=None):
@@ -27,7 +29,7 @@ def print_buffers(buffers):
     print("--- Buffers ---")
     for key, buf in buffers.items():
         filled = 'Filled' if buf.filled else ' Empty'
-        print(f"{key}, {filled}: {buf.data}")
+        print('{0}, {1}: {2}'.format(key, filled, buf.data))
 
 def prereqs_ready(task, buffers):
     for input_key in task.input_keys:
