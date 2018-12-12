@@ -92,8 +92,10 @@ def run_worker():
     print("I am a worker with rank %d." % (rank))
     while True:
         comm.send(None, dest=0, tag=tags.READY)
-        task, buffers = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+        data = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
         tag = status.Get_tag()
+        print("got", tag, data)
+        task, buffers = data
         
         if tag == tags.START:
             args = [buffers[key].data for key in task.input_keys]
@@ -108,7 +110,7 @@ def run_worker():
 
 def exit_all():
     for i in range(1, size):
-        comm.send(None, dest=i, tag=tags.EXIT)
+        comm.send((None, None), dest=i, tag=tags.EXIT)
 
 
 if __name__ == "__main__":
