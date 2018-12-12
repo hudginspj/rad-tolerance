@@ -100,6 +100,7 @@ def garbage_collect(tasks, buffers):
 
 
 buffer_data = {
+    'init': '',
     'A': 5,
     'B': 10,
     'C': 15,
@@ -109,7 +110,10 @@ buffer_data = {
 
 tasks = [
     Task('D', max, 'A','B'),
-    Task('E', max, 'C','D')
+    Task('E', max, 'C','D'),
+    Task('A', lambda x: 5, 'E'),
+    Task('B', lambda x: 10, 'E')
+    #Task('C', lambda x: 15, 'E')
 ]
 # tsp = None
 # tsp_stitch = None
