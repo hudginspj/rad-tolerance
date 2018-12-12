@@ -54,10 +54,7 @@ def exec_task(task, buffers):
             #print_buffers(buffers)
 
     print("redo: ", redo, " - rank: ", rank)
-    if (rank == 0):
-        run_master(task, buffers, comm, size, rank, status, retval, workers, redo)
-    else:
-        run_worker(task, buffers, comm, size, rank, status)
+    run_master(task, buffers, retval, workers, redo)
 
 
 def run_master(task, buffers, retval, workers, redo=True):
