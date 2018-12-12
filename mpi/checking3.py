@@ -42,49 +42,21 @@ def exec_task(task, buffers):
     for i in range(task.redundancy):
         data = comm.recv(source=MPI.ANY_SOURCE, tag=tags.READY, status=status)
         source = status.Get_source()
-        #tag = status.Get_tag()
         print("Sending task %d to worker %d" % (i, source), task, buffers)
         comm.send((task, buffers), dest=source, tag=tags.START)
-        
         workers.append(source)
 
     for worker in workers:
         data = comm.recv(source=worker, tag=tags.DONE, status=status)
         retval[worker] = data
-    
-
         print("workers: ", workers, "retval", retval.items())
+        
     if (retval[workers[0]] != retval[workers[1]]):  #todo: consider more than two processors
         exec_task(task, buffers)
     else:
         output_buffer = buffers[task.output_key]
         output_buffer.data = retval[workers[0]]
         output_buffer.filled = True
-    
-
-        # task_index += 1
-
-        # if (redo==False):
-        #     comm.send((None, None), dest=source, tag=tags.EXIT)
-        #     finished_workers += 1
-        # else:
-            
-        #     if tag == tags.READY:
-        #         if task_index < redundancy:  # if we still need to send the task to more processors 
-        #             comm.send((task, buffers), dest=source, tag=tags.START)
-        #             print("Sending task %d to worker %d" % (task_index, source))
-        #             workers.append(source)
-        #             task_index += 1
-        #         else:
-        #             comm.send((None, None), dest=source, tag=tags.EXIT)
-
-        #     elif tag == tags.DONE:
-        #         retval[source] = data
-        #         print("Got data from worker %d" % source)
-        #     elif tag == tags.EXIT:
-        #         print("Worker %d exited." % source)
-        #         finished_workers += 1
-
     print("Master finishing")
 
 
@@ -140,8 +112,8 @@ if __name__ == "__main__":
             print_buffers(buffers)
             exec_task(tasks[0], buffers)
             print_buffers(buffers)
-            #exec_task(tasks[1], buffers)
-            #print_buffers(buffers)
+            exec_task(tasks[1], buffers)
+            print_buffers(buffers)
             exit_all()
         else:
             run_worker()
