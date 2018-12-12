@@ -65,7 +65,7 @@ def run_worker():
     while True:
         comm.send(None, dest=0, tag=tags.READY)
         task, buffers = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
-        tag = status.Get_tag():
+        tag = status.Get_tag()
         
         if tag == tags.START:
             args = [buffers[key].data for key in task.input_keys]
