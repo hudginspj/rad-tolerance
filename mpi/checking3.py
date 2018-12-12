@@ -35,16 +35,16 @@ status = MPI.Status()   # get MPI status object
 
 
 def exec_task(task, buffers):  
-    print("Master starting with %d workers" % num_workers)
+    print("Master starting")
 
     workers = []
     retval = {}
-    for i in range(task.redudnancy):
+    for i in range(task.redundancy):
         data = comm.recv(source=MPI.ANY_SOURCE, tag=tags.READY, status=status)
         source = status.Get_source()
         #tag = status.Get_tag()
         comm.send((task, buffers), dest=source, tag=tags.START)
-        print("Sending task %d to worker %d" % (task_index, source))
+        print("Sending task %d to worker %d" % (i, source))
         workers.append(source)
 
     for worker in workers:
@@ -53,10 +53,12 @@ def exec_task(task, buffers):
     
 
         print("workers: ", workers, "retval", retval.items())
-    if (retval[workers[0]][task.output_key].data != retval[workers[1]][task.output_key].data):  #todo: consider more than two processors
+    if (retval[workers[0]] != retval[workers[1]]):  #todo: consider more than two processors
         exec_task(task, buffers)
     else:
-        buffers = retval[workers[0]]
+        output_buffer = buffers[task.output_key]
+        output_buffer.data = retval[workers[0]]
+        output_buffer.filled = True
     
 
         # task_index += 1
@@ -96,23 +98,16 @@ def run_worker():
             args = [buffers[key].data for key in task.input_keys]
             print("args: ", str(args))
             print("task.input_keys: ", task.input_keys)
-            out_buffer = buffers[task.output_key]
-            out_buffer.data = task.function(*args)
-            out_buffer.filled = True
-            # buffers[task.output_key] = bit_gremlin(out_buffer)
-
-            print("task.output_key: ", task.output_key)
-            print("out_buffer.data: ", out_buffer.data)
-            comm.send(buffers, dest=0, tag=tags.DONE)
+            output = task.function(*args)
+            comm.send(output, dest=0, tag=tags.DONE)
         elif tag == tags.EXIT:
             break
 
     comm.send(None, dest=0, tag=tags.EXIT)
 
-
-def worker_loop():
-    while True:
-        run_worker()
+def exit_all():
+    for i in range(1, size):
+        comm.send(None, dest=i, tag=tags.EXIT)
 
 
 if __name__ == "__main__":
@@ -142,10 +137,11 @@ if __name__ == "__main__":
             print_buffers(buffers)
             exec_task(tasks[0], buffers)
             print_buffers(buffers)
-            exec_task(tasks[1], buffers)
-            print_buffers(buffers)
+            #exec_task(tasks[1], buffers)
+            #print_buffers(buffers)
+            exit_all()
         else:
-            worker_loop()
+            run_worker()
     except Exception as e:
         print(e)
         exit(0)
