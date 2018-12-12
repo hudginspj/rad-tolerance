@@ -50,7 +50,7 @@ def exec_task(task, buffers):
         data = comm.recv(source=worker, tag=tags.DONE, status=status)
         retval[worker] = data
         print("workers: ", workers, "retval", retval.items())
-        
+
     if (retval[workers[0]] != retval[workers[1]]):  #todo: consider more than two processors
         exec_task(task, buffers)
     else:
@@ -64,10 +64,8 @@ def run_worker():
     print("I am a worker with rank %d." % (rank))
     while True:
         comm.send(None, dest=0, tag=tags.READY)
-        data = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
-        tag = status.Get_tag()
-        print("got", tag, data)
-        task, buffers = data
+        task, buffers = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+        tag = status.Get_tag():
         
         if tag == tags.START:
             args = [buffers[key].data for key in task.input_keys]
