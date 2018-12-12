@@ -52,7 +52,7 @@ def error_probability(task_time, half_error_time):
 def inc_test(wait_time, half_error_time):
     def f(x):
         desired_value = x+1
-        error_value = random.random()
+        error_value = random.random() + 1000
         error_prob = error_probability(wait_time, half_error_time)
         result = random.choices(
             population=[desired_value, error_value],
@@ -68,16 +68,16 @@ trial_2 = [
     Task('A', lambda x: 0, 'init'),
     Task('quit', lambda x: x>=6, 'A'),
 
-    Task('B', inc_test(1, 10), 'A'),
-    Task('C', inc_test(1, 10), 'B'),
-    Task('A', inc_test(1, 10), 'C'),
+    Task('B', inc_test(1, 2), 'A'),
+    Task('C', inc_test(1, 2), 'B'),
+    Task('A', inc_test(1, 2), 'C'),
 ]
 
 if __name__ == '__main__':
-    t = inc_test(1, 10)
+    #t = inc_test(1, 10)
     start = timeit.default_timer()
-    t(1)
-    #cycle(trial_2)
+    #t(1)
+    cycle(trial_2)
     # print(error_prob(0.1,1))
 
     # print(random.choices(
