@@ -12,6 +12,9 @@ class Task:
         self.input_keys = ins
         self.output_key = out
         self.done = False
+    def __str__(self):
+        return f'{self.output_key} {self.function.__name__} {",".join(self.input_keys)}'
+
 
 def exec_task(task, buffers):
     # Should send to multiple processors
@@ -21,19 +24,78 @@ def exec_task(task, buffers):
     out_buffer = buffers[task.output_key]
     out_buffer.data = task.function(*args)
     out_buffer.filled = True
+    task.done = True
 
 
-def print_buffers(buffers):
-    print("--- Buffers ---")
+def print_state(tasks, buffers):
+    s = ''
+    #print("--- State ---")
     for key, buf in buffers.items():
-        filled = 'Filled' if buf.filled else ' Empty'
-        print(f"{key}, {filled}: {buf.data}")
+        data = str(buf.data).ljust(6) if buf.filled else 'EMPTY '
+        s += f"{key}: {data} "
+    #print("--- Tasks ---")
+    for task in tasks:
+        ready = ' P' if prereqs_ready(task, buffers) else 'NP'
+        done = ' D' if task.done else 'ND'
+        s += f'|{task} {ready} {done} '
+        #print(prereqs_ready(task, buffers), task)
+    print(s)
 
 def prereqs_ready(task, buffers):
     for input_key in task.input_keys:
         if not buffers[input_key].filled:
             return False
     return True
+
+
+def next_task(tasks, buffers):
+    for task in tasks:
+        if not task.done and prereqs_ready(task, buffers):
+            return task
+    return None
+
+
+def garbage_collect(tasks, buffers):
+    for buffer in buffers.values():
+        buffer.needed = False
+    for task in tasks:
+        if not task.done:
+            for input_key in task.input_keys:
+                buffers[input_key].needed = True
+
+        output_buffer = buffers[task.output_key]
+        print(task, task.done, output_buffer.filled)
+        task.done = output_buffer.filled
+        
+    for buffer in buffers.values():
+        if buffer.filled and not buffer.needed:
+            buffer.filled = False
+            buffer.data = None
+# void garbage_collect(TASK *tasks, int num_tasks, BUF *bufs, int num_bufs) {
+#     for (int i = 0; i < num_bufs; i++) {
+#         bufs[i].needed = 0;
+#     }
+#     for (int i = 0; i < num_tasks; i++) {
+#         //printf(" %i:", tasks[i].is_done);
+#         if (!tasks[i].is_done){
+#             for (int j = 0; j < tasks[i].num_inputs; j++){
+#                 int input_j = tasks[i].input_indexes[j];
+#                 //printf("%i:", input_j);
+#                 bufs[input_j].needed = 1;
+#             }
+#         }
+#     }
+#     //printf(":done\n");
+#     for (int i = 0; i < num_bufs; i++) {
+#         BUF *buf = bufs + i;
+#         if (buf->is_filled && !buf->needed) {
+#             //printf("freeing %i\n", i);
+#             buf_free(bufs + i);
+#         }
+#     }
+# }
+
+
 
 buffer_data = {
     'A': 5,
@@ -57,38 +119,35 @@ tasks = [
 
 buffers = {key: Buffer(data) for (key, data) in buffer_data.items()}
 
-print_buffers(buffers)
-exec_task(tasks[0], buffers)
-print_buffers(buffers)
-exec_task(tasks[1], buffers)
-print_buffers(buffers)
+
+def reset():
+    buffers['A']= Buffer(5)
+    buffers['B'] = Buffer(10)
+    buffers['C'] = Buffer(15)
 
 
-# void exec_task(int task_num, TASK *task, BUF *bufs){
-#     BUF inputs[INPUTS_PER_TASK];
-#     for (int i = 0; i < task->num_inputs; i++) {
-#         inputs[i] = bufs[task->input_indexes[i]];
-#     }
-
-#     BUF outputs[OUTPUTS_PER_TASK];
-#     for (int i = 0; i < task->num_outputs; i++) {
-#         int output_i = task->output_indexes[i];
-#         buf_calloc(bufs+output_i);
-#         outputs[i] = bufs[output_i];
-#     }
-
-#     //printf("%p-%p\n", inputs[0].p, outputs[0].p);
-    
-#     void (*f)(BUF *,BUF *);
-#     f = task->f;
-#     f(inputs, outputs);
-#     //printf("Task %d completed, first four chars of output buffer: %x%x%x%x\n", task_num, outputs[0].p[0], outputs[0].p[1], outputs[0].p[2], outputs[0].p[3]);
-#     int *value = (int *)outputs[0].p;
-#     printf("Task %d completed, output buffer as integer: %d\n", task_num, *value);
-# }
-
-
-
+#print('r', prereqs_ready(tasks[1], buffers))
+count = 0
+while True:
+    print_state(tasks, buffers)
+    next_t = next_task(tasks, buffers)
+    if next_t is None:
+        #break
+        count += 1
+        print("----------", count)
+        if count > 2:
+            
+            break
+        reset()
+        garbage_collect(tasks, buffers)
+        continue
+    exec_task(next_t, buffers)
+    garbage_collect(tasks, buffers)
+# print_state(tasks, buffers)
+# exec_task(tasks[0], buffers)
+# print_state(tasks, buffers)
+# exec_task(tasks[1], buffers)
+# print_state(tasks, buffers)
 
 
 
