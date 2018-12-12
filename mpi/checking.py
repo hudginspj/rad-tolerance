@@ -32,6 +32,8 @@ size = comm.size        # total number of processes
 rank = comm.rank        # rank of this process
 status = MPI.Status()   # get MPI status object
 
+
+
 def exec_task(task, buffers):
     
     retval = dict()     # we store the results of multiple processors
@@ -152,6 +154,8 @@ if __name__ == "__main__":
     if (rank == 0):
         print_buffers(buffers)
         exec_task(tasks[0], buffers)
+        print_buffers(buffers)
+        exec_task(tasks[1], buffers)
         print_buffers(buffers)
     else:
         worker_loop()
