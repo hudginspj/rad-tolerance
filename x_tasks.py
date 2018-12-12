@@ -59,13 +59,15 @@ def garbage_collect(tasks, buffers):
     for buffer in buffers.values():
         buffer.needed = False
     for task in tasks:
+        output_buffer = buffers[task.output_key]  ### Move down??
+        #print(task, task.done, output_buffer.filled)
+        task.done = output_buffer.filled
+
         if not task.done:
             for input_key in task.input_keys:
                 buffers[input_key].needed = True
 
-        output_buffer = buffers[task.output_key]
-        print(task, task.done, output_buffer.filled)
-        task.done = output_buffer.filled
+        
         
     for buffer in buffers.values():
         if buffer.filled and not buffer.needed:
@@ -125,24 +127,25 @@ def reset():
     buffers['B'] = Buffer(10)
     buffers['C'] = Buffer(15)
 
-
-#print('r', prereqs_ready(tasks[1], buffers))
-count = 0
-while True:
-    print_state(tasks, buffers)
-    next_t = next_task(tasks, buffers)
-    if next_t is None:
-        #break
-        count += 1
-        print("----------", count)
-        if count > 2:
-            
-            break
-        reset()
+def cycle(tasks, buffers):
+    #print('r', prereqs_ready(tasks[1], buffers))
+    count = 0
+    while True:
+        print_state(tasks, buffers)
+        next_t = next_task(tasks, buffers)
+        if next_t is None:
+            return
+        exec_task(next_t, buffers)
         garbage_collect(tasks, buffers)
-        continue
-    exec_task(next_t, buffers)
+
+for i in range(3):
+    cycle(tasks, buffers)
+    print(">>>>", i )
+    reset()
+    #print_state(tasks, buffers)
     garbage_collect(tasks, buffers)
+    #print_state(tasks, buffers)
+    #print("<<<<<")
 # print_state(tasks, buffers)
 # exec_task(tasks[0], buffers)
 # print_state(tasks, buffers)
