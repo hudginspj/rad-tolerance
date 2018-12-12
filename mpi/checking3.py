@@ -43,8 +43,9 @@ def exec_task(task, buffers):
         data = comm.recv(source=MPI.ANY_SOURCE, tag=tags.READY, status=status)
         source = status.Get_source()
         #tag = status.Get_tag()
+        print("Sending task %d to worker %d" % (i, source), task, buffers)
         comm.send((task, buffers), dest=source, tag=tags.START)
-        print("Sending task %d to worker %d" % (i, source))
+        
         workers.append(source)
 
     for worker in workers:
@@ -143,7 +144,8 @@ if __name__ == "__main__":
         else:
             run_worker()
     except Exception as e:
-        print(e)
+        print('execption in', rank)
+        raise e
         exit(0)
     
 
