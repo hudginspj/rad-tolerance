@@ -1,26 +1,27 @@
-class Buffer:
-    def __init__(self, data=None):
-        self.data = data
-        self.needed = True
-        self.filled = data is not None
+from checking import Task, Buffer, exec_task
+# class Buffer:
+#     def __init__(self, data=None):
+#         self.data = data
+#         self.needed = True
+#         self.filled = data is not None
         
 
-class Task:
-    def __init__(self, out, f, *ins, redundancy=2):
-        self.function = f
-        self.input_keys = ins
-        self.output_key = out
-        self.done = False
-    def __str__(self):
-        return f'{self.output_key} {self.function.__name__} {",".join(self.input_keys)}'
+# class Task:
+#     def __init__(self, out, f, *ins, redundancy=2):
+#         self.function = f
+#         self.input_keys = ins
+#         self.output_key = out
+#         self.done = False
+#     def __str__(self):
+#         return f'{self.output_key} {self.function.__name__} {",".join(self.input_keys)}'
 
 
-def exec_task(task, buffers):
-    args = [buffers[key].data for key in task.input_keys]
-    out_buffer = buffers[task.output_key]
-    out_buffer.data = task.function(*args)
-    out_buffer.filled = True
-    task.done = True
+# def exec_task(task, buffers):
+#     args = [buffers[key].data for key in task.input_keys]
+#     out_buffer = buffers[task.output_key]
+#     out_buffer.data = task.function(*args)
+#     out_buffer.filled = True
+#     task.done = True
 
 
 def print_state(tasks, buffers):
