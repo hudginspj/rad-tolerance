@@ -44,20 +44,20 @@ def exec_task(task, buffers):
     
     # comm.barrier()
 
-    # redo = False
-    # if (rank == 0):
-    #     print("workers: ", workers)
-    #     if (retval[workers[0]][task.output_key].data != retval[workers[1]][task.output_key].data):  #todo: consider more than two processors
-    #         redo = True
-    #     else:
-    #         buffers = retval[workers[0]]
-    #         #print_buffers(buffers)
+    redo = False
+    if (rank == 0):
+        print("workers: ", workers)
+        if (retval[workers[0]][task.output_key].data != retval[workers[1]][task.output_key].data):  #todo: consider more than two processors
+            redo = True
+        else:
+            buffers = retval[workers[0]]
+            #print_buffers(buffers)
 
-    # print("redo: ", redo, " - rank: ", rank)
-    # if (rank == 0):
-    #     run_master(task, buffers, comm, size, rank, status, retval, workers, redo)
-    # else:
-    #     run_worker(task, buffers, comm, size, rank, status)
+    print("redo: ", redo, " - rank: ", rank)
+    if (rank == 0):
+        run_master(task, buffers, comm, size, rank, status, retval, workers, redo)
+    else:
+        run_worker(task, buffers, comm, size, rank, status)
 
 
 def run_master(task, buffers, retval, workers, redo=True):
