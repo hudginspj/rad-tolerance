@@ -34,63 +34,53 @@ status = MPI.Status()   # get MPI status object
 
 
 
-def exec_task(task, buffers):
-    
-    retval = dict()     # we store the results of multiple processors
-    workers = list()    # we save here the true workers that are doing the job
-    
-    run_master(task, buffers, retval, workers)
-
-    
-    # comm.barrier()
-
-    redo = False
-    if (rank == 0):
-        print("workers: ", workers, "retval", retval.items())
-        if (retval[workers[0]][task.output_key].data != retval[workers[1]][task.output_key].data):  #todo: consider more than two processors
-            redo = True
-        else:
-            buffers = retval[workers[0]]
-            #print_buffers(buffers)
-
-    print("redo: ", redo, " - rank: ", rank)
-    run_master(task, buffers, retval, workers, redo)
-
-
-def run_master(task, buffers, retval, workers, redo=True):
-    redundancy = task.redundancy
-    task_index = 0
-    num_workers = size - 1
-    finished_workers = 0
-    
+def exec_task(task, buffers):  
     print("Master starting with %d workers" % num_workers)
 
-    #while (True):
-    while finished_workers < num_workers:
-        data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+    workers = []
+    retval = {}
+    for i in range(task.redudnancy):
+        data = comm.recv(source=MPI.ANY_SOURCE, tag=tags.READY, status=status)
         source = status.Get_source()
-        tag = status.Get_tag()
+        #tag = status.Get_tag()
+        comm.send((task, buffers), dest=source, tag=tags.START)
+        print("Sending task %d to worker %d" % (task_index, source))
+        workers.append(source)
 
-        if (redo==False):
-            comm.send((None, None), dest=source, tag=tags.EXIT)
-            finished_workers += 1
-        else:
+    for worker in workers:
+        data = comm.recv(source=worker, tag=tags.DONE, status=status)
+        retval[worker] = data
+    
+
+        print("workers: ", workers, "retval", retval.items())
+    if (retval[workers[0]][task.output_key].data != retval[workers[1]][task.output_key].data):  #todo: consider more than two processors
+        exec_task(task, buffers)
+    else:
+        buffers = retval[workers[0]]
+    
+
+        # task_index += 1
+
+        # if (redo==False):
+        #     comm.send((None, None), dest=source, tag=tags.EXIT)
+        #     finished_workers += 1
+        # else:
             
-            if tag == tags.READY:
-                if task_index < redundancy:  # if we still need to send the task to more processors 
-                    comm.send((task, buffers), dest=source, tag=tags.START)
-                    print("Sending task %d to worker %d" % (task_index, source))
-                    workers.append(source)
-                    task_index += 1
-                else:
-                    comm.send((None, None), dest=source, tag=tags.EXIT)
+        #     if tag == tags.READY:
+        #         if task_index < redundancy:  # if we still need to send the task to more processors 
+        #             comm.send((task, buffers), dest=source, tag=tags.START)
+        #             print("Sending task %d to worker %d" % (task_index, source))
+        #             workers.append(source)
+        #             task_index += 1
+        #         else:
+        #             comm.send((None, None), dest=source, tag=tags.EXIT)
 
-            elif tag == tags.DONE:
-                retval[source] = data
-                print("Got data from worker %d" % source)
-            elif tag == tags.EXIT:
-                print("Worker %d exited." % source)
-                finished_workers += 1
+        #     elif tag == tags.DONE:
+        #         retval[source] = data
+        #         print("Got data from worker %d" % source)
+        #     elif tag == tags.EXIT:
+        #         print("Worker %d exited." % source)
+        #         finished_workers += 1
 
     print("Master finishing")
 

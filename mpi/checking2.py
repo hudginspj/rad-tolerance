@@ -60,13 +60,13 @@ def exec_task(task, buffers):
 def run_master(task, buffers, retval, workers, redo=True):
     redundancy = task.redundancy
     task_index = 0
-    num_workers = size - 1
     finished_workers = 0
     
     print("Master starting with %d workers" % num_workers)
 
     #while (True):
-    while finished_workers < num_workers:
+    for i in range(task.redundancy)
+        comm.send((task, buffers), dest=source, tag=tags.START)
         data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
         source = status.Get_source()
         tag = status.Get_tag()
@@ -98,7 +98,6 @@ def run_master(task, buffers, retval, workers, redo=True):
 def run_worker():
     print("I am a worker with rank %d." % (rank))
     while True:
-        comm.send(None, dest=0, tag=tags.READY)
         task, buffers = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
         tag = status.Get_tag()
         
@@ -116,13 +115,6 @@ def run_worker():
             comm.send(buffers, dest=0, tag=tags.DONE)
         elif tag == tags.EXIT:
             break
-
-    comm.send(None, dest=0, tag=tags.EXIT)
-
-
-def worker_loop():
-    while True:
-        run_worker()
 
 
 if __name__ == "__main__":
@@ -155,7 +147,7 @@ if __name__ == "__main__":
             exec_task(tasks[1], buffers)
             print_buffers(buffers)
         else:
-            worker_loop()
+            run_worker()
     except Exception as e:
         print(e)
         exit(0)
