@@ -57,11 +57,10 @@ def garbage_collect(tasks, buffers):
         output_buffer = buffers[task.output_key]  ### Move down??
         #print(task, task.done, output_buffer.filled)
         task.done = output_buffer.filled
-
         if not task.done:
             for input_key in task.input_keys:
                 buffers[input_key].needed = True  
-    for buffer in buffers.values():
+    for key, buffer in buffers.items():
         if buffer.filled and not buffer.needed:
             buffer.filled = False
             buffer.data = None
@@ -71,7 +70,8 @@ def buffers_from_tasks(tasks):
     buffers = {}
     for task in tasks:
         buffers[task.output_key] = Buffer()
-    buffers['init'] = Buffer('')
+    buffers['init'] = Buffer('INIT')
+    buffers['quit'] = Buffer(False)
     return buffers
 
 
@@ -84,11 +84,21 @@ tasks = [
     #Task('init', lambda x: '', 'E')
 ]
 
+
+def check_count(A):
+    print("checking count", A)
+    if A >= 20:
+        return True
+    else:
+        return False
+
 tasks = [
     Task('A', lambda x: 0, 'init'),
+    Task('quit', check_count, 'A'),
     Task('B', lambda x: x, 'A'),
     Task('C', lambda x: x, 'B'),
     Task('A', lambda x: x+1, 'C'),
+    
     # Task('D', max, 'A','B'),
     # Task('E', max, 'C','D')
     #Task('init', lambda x: '', 'E')
@@ -98,10 +108,16 @@ def cycle(tasks):
     buffers = buffers_from_tasks(tasks)
     while True:
         print_state(tasks, buffers)
+
         next_t = next_task(tasks, buffers)
         if next_t is None:
             return
         exec_task(next_t, buffers)
+
+        if buffers['quit'].data == True:
+            print_state(tasks, buffers)
+            return
+            
         garbage_collect(tasks, buffers)
 
 
