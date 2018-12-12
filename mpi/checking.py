@@ -46,7 +46,7 @@ def exec_task(task, buffers):
 
     redo = False
     if (rank == 0):
-        print("workers: ", workers)
+        print("workers: ", workers, "retval", retval.items())
         if (retval[workers[0]][task.output_key].data != retval[workers[1]][task.output_key].data):  #todo: consider more than two processors
             redo = True
         else:
@@ -147,15 +147,17 @@ if __name__ == "__main__":
         Task('E', max, 'C','D')
     ]
 
-    
-    if (rank == 0):
-        print_buffers(buffers)
-        exec_task(tasks[0], buffers)
-        print_buffers(buffers)
-        exec_task(tasks[1], buffers)
-        print_buffers(buffers)
-    else:
-        worker_loop()
-    
+    try:
+        if (rank == 0):
+            print_buffers(buffers)
+            exec_task(tasks[0], buffers)
+            print_buffers(buffers)
+            exec_task(tasks[1], buffers)
+            print_buffers(buffers)
+        else:
+            worker_loop()
+    except Execption as e:
+        print(e)
+        exit(0)
     
 
