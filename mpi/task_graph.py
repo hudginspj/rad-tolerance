@@ -1,4 +1,4 @@
-from checking import Task, Buffer, exec_task
+from checking4 import Task, Buffer, exec_task, exit_all, run_worker, rank
 # class Buffer:
 #     def __init__(self, data=None):
 #         self.data = data
@@ -76,20 +76,24 @@ def buffers_from_tasks(tasks):
 
 
 def cycle(tasks):
-    buffers = buffers_from_tasks(tasks)
-    while True:
-        print_state(tasks, buffers)
-
-        next_t = next_task(tasks, buffers)
-        if next_t is None:
-            return
-        exec_task(next_t, buffers)
-
-        if buffers['quit'].data == True:
+    if (rank != 0):
+        run_worker()           
+    else:
+        buffers = buffers_from_tasks(tasks)
+        while True:
             print_state(tasks, buffers)
-            return
-            
-        garbage_collect(tasks, buffers)
+
+            next_t = next_task(tasks, buffers)
+            if next_t is None:
+                return
+            exec_task(next_t, buffers)
+
+            if buffers['quit'].data == True:
+                print_state(tasks, buffers)
+                return
+                
+            garbage_collect(tasks, buffers)
+        exit_all()
 
 
 
