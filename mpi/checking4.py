@@ -44,7 +44,7 @@ def exec_task(task, buffers):
     print("Master starting")
 
     workers = []
-    retval = {}
+    retval = []
     for i in range(task.redundancy):
         data = comm.recv(source=MPI.ANY_SOURCE, tag=tags.READY, status=status)
         source = status.Get_source()
@@ -54,23 +54,22 @@ def exec_task(task, buffers):
 
     for worker in workers:
         data = comm.recv(source=worker, tag=tags.DONE, status=status)
-        retval[worker] = data
-        print("workers: ", workers, "retval", retval.items())
+        retval.append(data)
+        print("workers: ", workers, "retval", retval)
 
     # print("hola - retval[workers[0]]", retval[workers[0]])
     # print("hola - retval[workers[1]]", retval[workers[1]])
 
-    values_list = list(retval.values())
-    eq = len(set(values_list)) == 1         # Using set removes all duplicate elements. https://stackoverflow.com/a/23415761/3516051
+    eq = len(set(retval)) == 1         # Using set removes all duplicate elements. https://stackoverflow.com/a/23415761/3516051
     print("eq: ", eq)
     if not eq:
-        print("------ ERROR: ", values_list)
-    # print("len: ", len(set(values_list)))
+        print("------ ERROR: ", retval)
+    # print("len: ", len(set(retval)))
     
     if (eq == False and task.redundancy == 2):  # redo
         return exec_task(task, buffers) + 1
     elif (eq == False and task.redundancy > 2): # voting
-        counter = Counter(values_list)
+        counter = Counter(retval)
         majority_vote = counter.most_common(1)[0][0]
         votes_count = counter.most_common(1)[0][1]
         print('majority_vote: {0}, votes_count: {1}'.format(majority_vote, votes_count))
@@ -84,7 +83,7 @@ def exec_task(task, buffers):
             return 1
     else:
         output_buffer = buffers[task.output_key]
-        output_buffer.data = retval[workers[0]]
+        output_buffer.data = retval[0]
         output_buffer.filled = True
         return 0
     print("Master finishing")
