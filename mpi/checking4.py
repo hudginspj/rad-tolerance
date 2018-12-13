@@ -40,7 +40,7 @@ status = MPI.Status()   # get MPI status object
 
 
 
-def exec_task(task, buffers):  
+def exec_task(task, buffers):
     print("Master starting")
 
     workers = []
@@ -68,23 +68,20 @@ def exec_task(task, buffers):
     # print("len: ", len(set(values_list)))
     
     if (eq == False and task.redundancy == 2):  # redo
-        exec_task(task, buffers)
+        return exec_task(task, buffers) + 1
     elif (eq == False and task.redundancy > 2): # voting
         counter = Counter(values_list)
         majority_vote = counter.most_common(1)[0][0]
-        votes_count = counter.most_common(1)[0][1]
-        print('majority_vote: {0}, votes_count: {1}'.format(majority_vote, votes_count))
-
-        if (votes_count == 1):      # all results were differents, we are going to redo the task
-            exec_task(task, buffers)
-        else:
-            output_buffer = buffers[task.output_key]
-            output_buffer.data = majority_vote
-            output_buffer.filled = True
+        print("majority_vote: ", majority_vote)
+        output_buffer = buffers[task.output_key]
+        output_buffer.data = majority_vote
+        output_buffer.filled = True
+        return 1
     else:
         output_buffer = buffers[task.output_key]
         output_buffer.data = retval[workers[0]]
         output_buffer.filled = True
+        return 0
     print("Master finishing")
 
 
@@ -97,8 +94,8 @@ def run_worker():
         
         if tag == tags.START:
             args = [buffers[key].data for key in task.input_keys]
-            print("args: ", str(args))
-            print("task.input_keys: ", task.input_keys)
+            # print("args: ", str(args))
+            # print("task.input_keys: ", task.input_keys)
             output = task.function(*args)
             comm.send(output, dest=0, tag=tags.DONE)
         elif tag == tags.EXIT:
@@ -106,6 +103,7 @@ def run_worker():
             break
 
     comm.send(None, dest=0, tag=tags.EXIT)
+    return 0
 
 def exit_all():
     print("Sending exit signal")
