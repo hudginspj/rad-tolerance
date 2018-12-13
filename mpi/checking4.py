@@ -72,10 +72,15 @@ def exec_task(task, buffers):
     elif (eq == False and task.redundancy > 2): # voting
         counter = Counter(values_list)
         majority_vote = counter.most_common(1)[0][0]
-        print("majority_vote: ", majority_vote)
-        output_buffer = buffers[task.output_key]
-        output_buffer.data = majority_vote
-        output_buffer.filled = True
+        votes_count = counter.most_common(1)[0][1]
+        print('majority_vote: {0}, votes_count: {1}'.format(majority_vote, votes_count))
+
+        if (votes_count == 1):      # all results were differents, we are going to redo the task
+            exec_task(task, buffers)
+        else:
+            output_buffer = buffers[task.output_key]
+            output_buffer.data = majority_vote
+            output_buffer.filled = True
     else:
         output_buffer = buffers[task.output_key]
         output_buffer.data = retval[workers[0]]
@@ -127,7 +132,7 @@ if __name__ == "__main__":
 
     tasks = [
         Task('D', max, 'A','B'),
-        Task('E', lambda self, x: [randint(1, 2)][0], 'C','D', redundancy=3)
+        Task('E', lambda self, x: [randint(1, 9)][0], 'C','D', redundancy=3)
     ]
 
     try:
