@@ -2,7 +2,9 @@ import time
 import timeit
 import math
 import random
+import argparse
 from task_graph import cycle, Task, rank
+
 
 merges = [
     Task('A', lambda x: 5, 'init'),
@@ -83,12 +85,22 @@ def make_trial(wait_time, half_error_time, repetitions, redundancy):
 
 
 if __name__ == '__main__':
-    wait_time=0.1
-    half_error_time=0.2
-    repetitions=30
-    redundancy=2
+    parser = argparse.ArgumentParser(description='Run project experiments')
+    # parser.add_argument('integers', metavar='N', type=float,
+    #                     help='an integer for the accumulator')
+    parser.add_argument('task_time', type=float)
+    parser.add_argument('half_error_time', type=float)
+    parser.add_argument('repetitions', type=float)
+    parser.add_argument('redundancy', type=float)
 
-    tasks = make_trial(wait_time, half_error_time, repetitions, redundancy)
+    args = parser.parse_args()
+
+    # wait_time=0.1
+    # half_error_time=0.2
+    # repetitions=30
+    # redundancy=2
+
+    tasks = make_trial(args.task_time, args.half_error_time, args.repetitions, args.redundancy)
 
     start = timeit.default_timer()  
     redos = cycle(tasks)
