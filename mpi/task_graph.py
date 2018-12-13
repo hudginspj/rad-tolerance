@@ -65,10 +65,8 @@ def cycle(tasks):
             errors += exec_task(next_t, buffers)
 
             if buffers['quit'].data == True:
-                print("about to send exit signal")
                 print_state(tasks, buffers)
                 exit_all()
-                print("sent exit signal, errors", errors)
                 return errors
                 
             garbage_collect(tasks, buffers)
