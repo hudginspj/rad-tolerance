@@ -85,7 +85,7 @@ def make_trial(wait_time, half_error_time, repetitions, redundancy):
 if __name__ == '__main__':
     wait_time=0.1
     half_error_time=0.2
-    repititions=30
+    repetitions=30
     redundancy=2
 
     tasks = make_trial(wait_time, half_error_time, repetitions, redundancy)
