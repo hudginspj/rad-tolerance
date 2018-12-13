@@ -72,9 +72,6 @@ def buffers_from_tasks(tasks):
     return buffers
 
 
-
-
-
 def cycle(tasks):
     if (rank != 0):
         run_worker()           

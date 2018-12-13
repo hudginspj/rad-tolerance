@@ -48,7 +48,7 @@ def exec_task(task, buffers):
     for i in range(task.redundancy):
         data = comm.recv(source=MPI.ANY_SOURCE, tag=tags.READY, status=status)
         source = status.Get_source()
-        print("Sending task %d to worker %d" % (i, source), task, buffers)
+        # print("Sending task %d to worker %d" % (i, source), task, buffers)
         comm.send((task, buffers), dest=source, tag=tags.START)
         workers.append(source)
 
@@ -63,6 +63,8 @@ def exec_task(task, buffers):
     values_list = list(retval.values())
     eq = len(set(values_list)) == 1         # Using set removes all duplicate elements. https://stackoverflow.com/a/23415761/3516051
     print("eq: ", eq)
+    if not eq:
+        print("------ ERROR: ", values_list)
     # print("len: ", len(set(values_list)))
     
     if (eq == False and task.redundancy == 2):  # redo
@@ -95,11 +97,13 @@ def run_worker():
             output = task.function(*args)
             comm.send(output, dest=0, tag=tags.DONE)
         elif tag == tags.EXIT:
+            print(rank, "exiting")
             break
 
     comm.send(None, dest=0, tag=tags.EXIT)
 
 def exit_all():
+    print("Sending exit signal")
     for i in range(1, size):
         comm.send((None, None), dest=i, tag=tags.EXIT)
 
