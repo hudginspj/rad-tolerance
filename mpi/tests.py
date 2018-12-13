@@ -87,8 +87,10 @@ if __name__ == '__main__':
     tasks = make_trial(0.1, 0.2, 30, 2)
 
     start = timeit.default_timer()
+    
+    errors = cycle(tasks)
     if rank == 0:
-        print("total errors:", cycle(tasks))
+        print("total errors:", errors)
 
 
     stop = timeit.default_timer()
