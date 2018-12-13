@@ -90,8 +90,8 @@ if __name__ == '__main__':
     #                     help='an integer for the accumulator')
     parser.add_argument('task_time', type=float)
     parser.add_argument('half_error_time', type=float)
-    parser.add_argument('repetitions', type=float)
-    parser.add_argument('redundancy', type=float)
+    parser.add_argument('repetitions', type=int)
+    parser.add_argument('redundancy', type=int)
 
     args = parser.parse_args()
 
