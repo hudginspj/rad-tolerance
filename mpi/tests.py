@@ -83,19 +83,21 @@ def make_trial(wait_time, half_error_time, repetitions, redundancy):
 
 
 if __name__ == '__main__':
+    wait_time=0.1
+    half_error_time=0.2
+    repititions=30
+    redundancy=2
 
-    tasks = make_trial(0.1, 0.2, 30, 2)
+    tasks = make_trial(wait_time, half_error_time, repetitions, redundancy)
 
-    start = timeit.default_timer()
+    start = timeit.default_timer()  
+    redos = cycle(tasks)
     
-    errors = cycle(tasks)
     if rank == 0:
-        print("total errors:", errors)
-
-
-    stop = timeit.default_timer()
-    if rank == 0:
-        print('Time: ', stop - start)
+        runtime = timeit.default_timer() - start
+        print('wait time', wait_time, 'half_error_time', half_error_time, 'repititions', repetitions, 'redundancy', redundancy)
+        print("total redos:", redos, "redo ratio", redos/repetitions)
+        print('runtime', runtime, 'average runtime', runtime/repetitions, 'average work', runtime * redundancy / repetitions)
 
 
 
