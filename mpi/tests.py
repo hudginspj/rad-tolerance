@@ -108,7 +108,7 @@ if __name__ == '__main__':
     if rank == 0:
         runtime = timeit.default_timer() - start
         print('task time', args.task_time, 'half_error_time', args.half_error_time, 'repititions', args.repetitions, 'redundancy', args.redundancy)
-        print("total redos:", redos, "redo ratio", redos/repetitions)
+        print("total redos:", redos, "redo ratio", redos/args.repetitions)
         print('runtime', runtime, 'average runtime', runtime/args.repetitions, 'average work', runtime * args.redundancy / args.repetitions)
 
 
