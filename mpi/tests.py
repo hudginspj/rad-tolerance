@@ -64,25 +64,31 @@ def inc_test(wait_time, half_error_time):
 
 trial_2 = [
     Task('A', lambda x: 0, 'init'),
-    Task('quit', lambda x: x>=6, 'A'),
+    Task('quit', lambda x: x>=60, 'A'),
 
-    Task('B', inc_test(1, 2), 'A'),
-    Task('C', inc_test(1, 2), 'B'),
-    Task('A', inc_test(1, 2), 'C'),
+    Task('B', inc_test(0.1, 0.2), 'A'),
+    Task('C', inc_test(0.1, 0.2), 'B'),
+    Task('A', inc_test(0.1, 0.2), 'C'),
 ]
 
-if __name__ == '__main__':
-    #t = inc_test(1, 10)
-    start = timeit.default_timer()
-    #t(1)
-    cycle(trial_2)
-    # print(error_prob(0.1,1))
+def make_trial(wait_time, half_error_time, repetitions, redundancy):
+    return [
+        Task('A', lambda x: 0, 'init'),
+        Task('quit', lambda x: x>=repetitions, 'A'),
 
-    # print(random.choices(
-    #     population=[0,1],
-    #     weights=[1-.1295,.1295],
-    #     k=10
-    # ))
+        Task('B', inc_test(wait_time, half_error_time), 'A', redundancy=redundancy),
+        Task('C', inc_test(wait_time, half_error_time), 'B', redundancy=redundancy),
+        Task('A', inc_test(wait_time, half_error_time), 'C', redundancy=redundancy),
+    ]
+
+
+if __name__ == '__main__':
+
+    tasks = make_trial(0.1, 0.2, 30, 2)
+
+    start = timeit.default_timer()
+    print("total errors:", cycle(tasks))
+
 
     stop = timeit.default_timer()
     print('Time: ', stop - start)
