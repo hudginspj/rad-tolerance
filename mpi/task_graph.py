@@ -51,7 +51,8 @@ def buffers_from_tasks(tasks):
 def cycle(tasks):
     errors = 0
     if (rank != 0):
-        run_worker()           
+        run_worker()
+        return           
     else:
         buffers = buffers_from_tasks(tasks)
         while True:
@@ -67,10 +68,11 @@ def cycle(tasks):
                 print("about to send exit signal")
                 print_state(tasks, buffers)
                 exit_all()
-                print("sent exit signal")
+                print("sent exit signal, errors", errors)
                 return errors
                 
             garbage_collect(tasks, buffers)
+    
         
 
 

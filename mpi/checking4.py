@@ -103,6 +103,7 @@ def run_worker():
             break
 
     comm.send(None, dest=0, tag=tags.EXIT)
+    return 0
 
 def exit_all():
     print("Sending exit signal")
