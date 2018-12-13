@@ -28,7 +28,7 @@ def print_state(tasks, buffers):
     s = ''
     for key, buf in buffers.items():
         data = str(buf.data).ljust(6) if buf.filled else 'EMPTY '
-        s += f"{key}: {data} "
+        s += str(key) + ": " + str(data)
     # for task in tasks:
     #     ready = ' P' if prereqs_ready(task, buffers) else 'NP'
     #     done = ' D' if task.done else 'ND'
