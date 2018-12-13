@@ -51,17 +51,15 @@ def error_probability(task_time, half_error_time):
 
 def inc_test(wait_time, half_error_time):
     def f(x):
-        desired_value = x+1
-        error_value = random.random() + 1000
         error_prob = error_probability(wait_time, half_error_time)
-        result = random.choices(
-            population=[desired_value, error_value],
-            weights=[1-error_prob, error_prob],
-            k=1
-        )[0]
+        if random.random() > error_prob:
+            result = x+1  #Increment the input for testing purposes
+        else:
+            result = random.random() * 1000
+        
 
         time.sleep(wait_time)
-        return result   #Increment the input for testing purposes
+        return result   
     return f
 
 trial_2 = [
