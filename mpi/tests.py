@@ -2,7 +2,7 @@ import time
 import timeit
 import math
 import random
-from task_graph import cycle, Task
+from task_graph import cycle, Task, rank
 
 merges = [
     Task('A', lambda x: 5, 'init'),
