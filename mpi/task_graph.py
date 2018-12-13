@@ -1,28 +1,4 @@
 from checking4 import Task, Buffer, exec_task, exit_all, run_worker, rank
-# class Buffer:
-#     def __init__(self, data=None):
-#         self.data = data
-#         self.needed = True
-#         self.filled = data is not None
-        
-
-# class Task:
-#     def __init__(self, out, f, *ins, redundancy=2):
-#         self.function = f
-#         self.input_keys = ins
-#         self.output_key = out
-#         self.done = False
-#     def __str__(self):
-#         return f'{self.output_key} {self.function.__name__} {",".join(self.input_keys)}'
-
-
-# def exec_task(task, buffers):
-#     args = [buffers[key].data for key in task.input_keys]
-#     out_buffer = buffers[task.output_key]
-#     out_buffer.data = task.function(*args)
-#     out_buffer.filled = True
-#     task.done = True
-
 
 def print_state(tasks, buffers):
     s = ''
@@ -81,16 +57,18 @@ def cycle(tasks):
             print_state(tasks, buffers)
 
             next_t = next_task(tasks, buffers)
-            if next_t is None:
-                return
+            # if next_t is None:
+            #     exit_all()
+            #     return
             exec_task(next_t, buffers)
 
             if buffers['quit'].data == True:
                 print_state(tasks, buffers)
+                exit_all()
                 return
                 
             garbage_collect(tasks, buffers)
-        exit_all()
+        
 
 
 
