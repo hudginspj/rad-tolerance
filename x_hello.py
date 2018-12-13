@@ -1,0 +1,1 @@
+if VERBOSE: print("hello")

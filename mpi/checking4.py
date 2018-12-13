@@ -75,12 +75,12 @@ def exec_task(task, buffers):
         print('majority_vote: {0}, votes_count: {1}'.format(majority_vote, votes_count))
 
         if (votes_count == 1):      # all results were differents, we are going to redo the task
-            exec_task(task, buffers)
+            return exec_task(task, buffers) + task.redundancy - 1
         else:
             output_buffer = buffers[task.output_key]
             output_buffer.data = majority_vote
             output_buffer.filled = True
-            return 1
+            return task.redundancy - votes_count
     else:
         output_buffer = buffers[task.output_key]
         output_buffer.data = retval[0]
