@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     tasks = [
         Task('D', max, 'A','B'),
-        Task('E', lambda self, x: [randint(1, 9)][0], 'C','D', redundancy=3)
+        Task('E', lambda self, x: [randint(1, 2)][0], 'C','D', redundancy=3)
     ]
 
     if (rank == 0):
