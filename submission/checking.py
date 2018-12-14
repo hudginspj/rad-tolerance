@@ -39,12 +39,12 @@ def exec_task(task, buffers):
     for worker in workers:
         data = comm.recv(source=worker, tag=tags.DONE, status=status)
         retval.append(data)
-        print("workers: ", workers, "retval", retval)
+        #print("workers: ", workers, "retval", retval)
 
 
     eq = len(set(retval)) == 1         # Using set removes all duplicate elements. https://stackoverflow.com/a/23415761/3516051
     if not eq:
-        print("------ ERROR: ", retval)
+        print("[ERROR DETECTED] Outputs: ", retval)
     # print("len: ", len(set(retval)))
     
     if (eq == False and task.redundancy == 2):  # redo

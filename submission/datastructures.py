@@ -22,7 +22,7 @@ def buffers_from_tasks(tasks):
 
 
 def print_state(tasks, buffers):
-    s = ''
+    s = 'Buffers: '
     for key, buf in buffers.items():
         data = str(buf.data).ljust(6) if buf.filled else 'EMPTY '
         s += str(key) + ": " + str(data)
