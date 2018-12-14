@@ -110,11 +110,11 @@ if __name__ == "__main__":
     ]
 
     if (rank == 0):
-        print_buffers(buffers)
+        print_state(tasks, buffers)
         exec_task(tasks[0], buffers)
-        print_buffers(buffers)
+        print_state(tasks, buffers)
         exec_task(tasks[1], buffers)
-        print_buffers(buffers)
+        print_state(tasks, buffers)
         exit_all()
     else:
         run_worker()

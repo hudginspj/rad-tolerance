@@ -1,18 +1,19 @@
 from checking import *
 
 
-
 def prereqs_ready(task, buffers):
     for input_key in task.input_keys:
         if not buffers[input_key].filled:
             return False
     return True
 
+
 def next_task(tasks, buffers):
     for task in tasks:
         if not task.done and prereqs_ready(task, buffers):
             return task
     return None
+
 
 def garbage_collect(tasks, buffers):
     for buffer in buffers.values():
@@ -27,8 +28,6 @@ def garbage_collect(tasks, buffers):
         if buffer.filled and not buffer.needed:
             buffer.filled = False
             buffer.data = None
-
-
 
 
 def cycle(tasks):
