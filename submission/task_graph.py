@@ -60,7 +60,7 @@ if __name__ == "__main__":
         Task('B', lambda x: 10, 'init'),
         Task('C', lambda x: 15, 'init'),
         Task('D', max, 'A','B'),
-        Task('E', max, 'C','D')
+        Task('E', max, 'C','D'),
         Task('quit', lambda x: True, 'E')
     ]
 
